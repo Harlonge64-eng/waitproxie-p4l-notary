@@ -11,6 +11,7 @@ import RonPage from './pages/RonPage';
 import AdminPage from './pages/AdminPage';
 import LegalPage from './pages/LegalPage';
 import TrackPage from './pages/TrackPage';
+import CustomerAuthPage from './pages/CustomerAuthPage';
 
 function getPath(): string {
   const hash = window.location.hash.replace(/^#/, '');
@@ -62,6 +63,7 @@ export default function App() {
     if (path === '/about') return <AboutPage navigate={navigate} />;
     if (path === '/contact') return <ContactPage />;
     if (path === '/pricing') return <PricingPage navigate={navigate} />;
+    if (path === '/auth') return <CustomerAuthPage navigate={navigate} />;
     if (path === '/book') return <BookingPage navigate={navigate} />;
     if (path === '/track') return <TrackPage navigate={navigate} />;
     if (path === '/ron') return <RonPage navigate={navigate} />;
@@ -278,3 +280,4 @@ const ronInfoSections = [
     body: 'You can sign up to be notified when Remote Online Notarization becomes available by using the "Notify Me" form on our RON page.',
   },
 ];
+

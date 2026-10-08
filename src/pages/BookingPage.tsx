@@ -30,6 +30,15 @@ const services = [
 
 const steps = ['Your Information', 'Document Details', 'Review & Submit'];
 
+const createBookingConfirmationToken = async () => {
+  const bytes = new Uint8Array(32);
+  crypto.getRandomValues(bytes);
+  const token = Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(token));
+  const hash = Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, '0')).join('');
+  return { token, hash };
+};
+
 export default function BookingPage({ navigate }: BookingPageProps) {
   const [step, setStep] = useState(0);
   const [form, setForm] = useState({
@@ -44,7 +53,7 @@ export default function BookingPage({ navigate }: BookingPageProps) {
   const [requiresManualReview, setRequiresManualReview] = useState(false);
   const [status, setStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
   const [errorMsg, setErrorMsg] = useState('');
-  const [bookingId, setBookingId] = useState<string | null>(null);
+  const [bookingReference, setBookingReference] = useState<string | null>(null);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = e.target.files?.[0];
@@ -108,10 +117,14 @@ export default function BookingPage({ navigate }: BookingPageProps) {
     setErrorMsg('');
 
     const requestId = crypto.randomUUID();
+    const customerReference = crypto.randomUUID().replace(/-/g, '').substring(0, 8).toUpperCase();
+    const { token: confirmationToken, hash: confirmationTokenHash } = await createBookingConfirmationToken();
+    const confirmationTokenExpiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
 
     try {
       const { error } = await supabase.from('booking_requests').insert({
         id: requestId,
+        customer_reference_id: customerReference,
         full_name: form.fullName,
         phone: form.phone,
         email: form.email,
@@ -127,11 +140,14 @@ export default function BookingPage({ navigate }: BookingPageProps) {
         requires_manual_review: requiresManualReview,
         document_url: documentUrl,
         ai_review_summary: aiReview ? { flags: aiReview.split('\n') } : null,
+        confirmation_token_hash: confirmationTokenHash,
+        confirmation_token_expires_at: confirmationTokenExpiresAt,
       });
 
       if (error) throw error;
 
-      setBookingId(requestId);
+      // Customer email confirmation temporarily disabled until p4lnotary.net is verified with Resend.
+      setBookingReference(customerReference);
       setStatus('success');
     } catch (err) {
       setStatus('error');
@@ -144,7 +160,7 @@ export default function BookingPage({ navigate }: BookingPageProps) {
 
   const canProceed = () => {
     if (step === 0) return form.fullName && form.phone && form.email && form.service;
-    if (step === 1) return form.documentType;
+    if (step === 1) return true;
     return true;
   };
 
@@ -172,11 +188,11 @@ export default function BookingPage({ navigate }: BookingPageProps) {
             )}
             <p className="mb-6 text-sm text-slate-500">
               Your request status: <span className="font-semibold text-brand-700">{requiresManualReview ? 'Document Review' : 'Request Submitted'}</span>
-              {bookingId && <>
+              {bookingReference && <>
                 <br /><br />
                 <span className="text-slate-400">Your Reference ID:</span><br />
-                <span className="font-mono text-lg font-bold tracking-wider text-brand-800">{bookingId.substring(0, 8).toUpperCase()}</span>
-                <br /><span className="text-xs text-slate-400">Save this ID to track your request status.</span>
+                <span className="font-mono text-lg font-bold tracking-wider text-brand-800">{bookingReference}</span>
+                <br /><span className="text-xs text-slate-400">Save this reference to track your request status.</span>
               </>}
             </p>
             <p className="mb-6 text-sm text-slate-500">
@@ -420,3 +436,4 @@ export default function BookingPage({ navigate }: BookingPageProps) {
     </div>
   );
 }
+

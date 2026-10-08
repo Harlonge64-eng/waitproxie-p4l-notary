@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import {
   LayoutDashboard, Calendar, MessageSquare, Bell, Star, Settings,
   LogIn, LogOut, Lock, Shield, ScrollText, AlertCircle, Check, X,
@@ -193,7 +193,7 @@ export default function AdminPage() {
 
         {/* Main */}
         <main className="ml-64 flex-1 p-6">
-          {tab === 'dashboard' && <DashboardTab />}
+          {tab === 'dashboard' && <DashboardTab onNavigate={setTab} />}
           {tab === 'bookings' && <BookingsTab />}
           {tab === 'messages' && <MessagesTab />}
           {tab === 'ron-leads' && <RonLeadsTab />}
@@ -206,7 +206,7 @@ export default function AdminPage() {
   );
 }
 
-function DashboardTab() {
+function DashboardTab({ onNavigate }: { onNavigate: (tab: Tab) => void }) {
   const [stats, setStats] = useState({ bookings: 0, messages: 0, ronLeads: 0, pendingBookings: 0 });
 
   useEffect(() => {
@@ -222,10 +222,10 @@ function DashboardTab() {
   }, []);
 
   const cards = [
-    { label: 'Total Bookings', value: stats.bookings, icon: Calendar, color: 'bg-brand-100 text-brand-700' },
-    { label: 'Pending Requests', value: stats.pendingBookings, icon: AlertCircle, color: 'bg-warning-100 text-warning-700' },
-    { label: 'New Messages', value: stats.messages, icon: MessageSquare, color: 'bg-accent-100 text-accent-700' },
-    { label: 'RON Leads', value: stats.ronLeads, icon: Bell, color: 'bg-success-100 text-success-700' },
+    { label: 'Total Bookings', value: stats.bookings, icon: Calendar, color: 'bg-brand-100 text-brand-700', tab: 'bookings' },
+    { label: 'Pending Requests', value: stats.pendingBookings, icon: AlertCircle, color: 'bg-warning-100 text-warning-700', tab: 'bookings' },
+    { label: 'New Messages', value: stats.messages, icon: MessageSquare, color: 'bg-accent-100 text-accent-700', tab: 'messages' },
+    { label: 'RON Leads', value: stats.ronLeads, icon: Bell, color: 'bg-success-100 text-success-700', tab: 'ron-leads' },
   ];
 
   return (
@@ -233,13 +233,13 @@ function DashboardTab() {
       <h1 className="mb-6 text-2xl font-bold text-brand-800">Dashboard Overview</h1>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {cards.map((card, i) => (
-          <div key={i} className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+          <button key={i} type="button" onClick={() => onNavigate(card.tab)} className="w-full rounded-xl border border-slate-200 bg-white p-6 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2">
             <div className={`mb-3 flex h-10 w-10 items-center justify-center rounded-lg ${card.color}`}>
               <card.icon className="h-5 w-5" />
             </div>
             <p className="text-3xl font-bold text-brand-800">{card.value}</p>
             <p className="text-sm text-slate-500">{card.label}</p>
-          </div>
+          </button>
         ))}
       </div>
     </div>
@@ -373,27 +373,49 @@ function BookingsTab() {
     setNotifStatus({ ...notifStatus, [id]: 'sending' });
 
     try {
+      const subject = 'Update on your booking request - P4L Mobile Notary';
+
       const { error: notifError } = await supabase.from('notifications').insert({
         booking_id: id,
         customer_email: String(b.email),
-        subject: 'Update on your booking request — P4L Mobile Notary',
+        subject,
         message,
       });
       if (notifError) throw notifError;
 
-      await supabase.from('booking_requests').update({
+      const notifiedAt = new Date().toISOString();
+
+      const { error: bookingError } = await supabase.from('booking_requests').update({
         admin_message: message,
-        notified_at: new Date().toISOString(),
+        notified_at: notifiedAt,
       }).eq('id', id);
+      if (bookingError) throw bookingError;
+
+      const { error: emailError } = await supabase.functions.invoke('send-customer-notification', {
+        body: {
+          booking_id: id,
+          customer_email: String(b.email),
+          subject,
+          message,
+        },
+      });
+      if (emailError) throw emailError;
 
       await supabase.from('audit_logs').insert({
         action: 'customer_notified',
         entity_type: 'booking_requests',
         entity_id: id,
-        details: { message_length: message.length },
+        details: {
+          message_length: message.length,
+          email_sent: true,
+        },
       });
 
-      setBookings(bookings.map((bk) => (bk.id === id ? { ...bk, admin_message: message, notified_at: new Date().toISOString() } : bk)));
+      setBookings(bookings.map((bk) => (
+        bk.id === id
+          ? { ...bk, admin_message: message, notified_at: notifiedAt }
+          : bk
+      )));
       setNotifStatus({ ...notifStatus, [id]: 'sent' });
       setAdminMessages({ ...adminMessages, [id]: '' });
       setTimeout(() => setNotifStatus((s) => ({ ...s, [id]: 'idle' })), 3000);
@@ -504,7 +526,7 @@ function BookingsTab() {
                           </h4>
                           <textarea
                             rows={4}
-                            placeholder="Notes about this booking — visible to admin only"
+                            placeholder="Notes about this booking â€” visible to admin only"
                             value={reviewNotes[id] ?? String(b.review_notes ?? '')}
                             onChange={(e) => setReviewNotes({ ...reviewNotes, [id]: e.target.value })}
                             className="input-field resize-none text-sm"
@@ -530,7 +552,7 @@ function BookingsTab() {
                             disabled={notifStatus[id] === 'sending' || !(adminMessages[id]?.trim())}
                             className="btn-primary mt-2 text-sm disabled:opacity-50"
                           >
-                            {notifStatus[id] === 'sending' ? 'Sending...' : notifStatus[id] === 'sent' ? 'Sent!' : notifStatus[id] === 'error' ? 'Failed — try again' : (
+                            {notifStatus[id] === 'sending' ? 'Sending...' : notifStatus[id] === 'sent' ? 'Sent!' : notifStatus[id] === 'error' ? 'Failed â€” try again' : (
                               <><Send className="h-3.5 w-3.5" /> Send Notification</>
                             )}
                           </button>
@@ -865,3 +887,6 @@ function AuditTab() {
     </div>
   );
 }
+
+
+

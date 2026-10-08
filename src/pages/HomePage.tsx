@@ -39,7 +39,7 @@ export default function HomePage({ navigate }: HomePageProps) {
               Convenient mobile notary services serving Richmond, North Chesterfield, and surrounding Virginia areas.
             </p>
             <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
-              <button onClick={() => navigate('/book')} className="btn-accent w-full sm:w-auto">
+              <button onClick={() => navigate('/auth')} className="btn-accent w-full sm:w-auto">
                 <BookOpen className="h-5 w-5" />
                 Book a Notary
               </button>
@@ -171,7 +171,7 @@ export default function HomePage({ navigate }: HomePageProps) {
             Schedule a convenient appointment with {businessConfig.businessName}.
           </p>
           <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
-            <button onClick={() => navigate('/book')} className="btn-accent w-full sm:w-auto">
+            <button onClick={() => navigate('/auth')} className="btn-accent w-full sm:w-auto">
               <BookOpen className="h-5 w-5" />
               Book a Notary
             </button>

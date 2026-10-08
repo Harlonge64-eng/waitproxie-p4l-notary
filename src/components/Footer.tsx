@@ -23,6 +23,7 @@ const quickLinks = [
   { label: 'Track Request', path: '/track' },
   { label: 'Contact', path: '/contact' },
   { label: 'Pricing', path: '/pricing' },
+  { label: 'Admin Login', path: '/admin' },
 ];
 
 export default function Footer({ navigate }: FooterProps) {

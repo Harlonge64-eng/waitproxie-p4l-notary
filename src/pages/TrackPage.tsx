@@ -170,7 +170,7 @@ export default function TrackPage({ navigate }: TrackPageProps) {
           </h1>
 
           <p className="mx-auto max-w-2xl text-lg text-brand-100">
-            Enter your reference ID and email to check the status of your
+            Enter your booking reference and email to check the status of your
             booking request.
           </p>
         </div>
@@ -188,7 +188,7 @@ export default function TrackPage({ navigate }: TrackPageProps) {
                     htmlFor="ref-id"
                     className="mb-1 block text-sm font-medium text-slate-700"
                   >
-                    Reference ID *
+                    Booking Reference *
                   </label>
 
                   <input
@@ -259,8 +259,8 @@ export default function TrackPage({ navigate }: TrackPageProps) {
               </h2>
 
               <p className="text-sm text-slate-500">
-                We couldn't find a booking with that reference ID and email
-                combination. Please check your reference ID (from your booking
+                We couldn't find a booking with that booking reference and email
+                combination. Please check your booking reference (from your booking
                 confirmation) and the email you used when booking.
               </p>
 
@@ -638,7 +638,7 @@ export default function TrackPage({ navigate }: TrackPageProps) {
               <Search className="mx-auto mb-3 h-8 w-8 text-slate-400" />
 
               <p className="text-sm text-slate-500">
-                Your reference ID was shown on the confirmation screen when
+                Your booking reference was shown on the confirmation screen when
                 you submitted your booking request. It starts with an
                 8-character code (e.g., A1B2C3D4).
               </p>
